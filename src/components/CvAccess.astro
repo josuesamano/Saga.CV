@@ -1,0 +1,145 @@
+---
+import type { Locale } from '../data/resume';
+
+interface Props {
+  locale: Locale;
+  href: string;
+  filename: string;
+}
+
+const { locale, href, filename } = Astro.props;
+const copy = locale === 'es'
+  ? {
+      hint: 'Ingresa la clave que te compartió Josué para ver sus datos de contacto y descargar el CV.',
+      key: 'Clave de acceso', unlock: 'Desbloquear', error: 'La clave no es correcta.',
+      unavailable: 'No se pudo abrir el CV. Inténtalo de nuevo.',
+      download: 'Descargar CV (PDF)', lock: 'Ocultar datos y descarga',
+      noScript: 'Activa JavaScript en tu navegador para abrir el CV.',
+    }
+  : {
+      hint: 'Enter the key Josué shared with you to see his contact details and download the CV.',
+      key: 'Access key', unlock: 'Unlock', error: 'The key is incorrect.',
+      unavailable: 'Could not open the CV. Please try again.',
+      download: 'Download CV (PDF)', lock: 'Hide contact details and download',
+      noScript: 'Enable JavaScript in your browser to open the CV.',
+    };
+---
+<div class="cv-access" data-cv-access data-locale={locale} data-file={href} data-invalid={copy.error} data-unavailable={copy.unavailable}>
+  <noscript>{copy.noScript}</noscript>
+  <div data-cv-controls hidden>
+    <p>{copy.hint}</p>
+    <form data-cv-form>
+      <label for="cv-key">{copy.key}</label>
+      <div class="cv-key-row">
+        <input id="cv-key" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" required />
+        <button type="submit">{copy.unlock}</button>
+      </div>
+    </form>
+    <p data-cv-status role="status"></p>
+  </div>
+  <div data-cv-details hidden>
+    <address><a data-cv-email></a> <a data-cv-whatsapp></a></address>
+    <div class="cv-key-row">
+      <a class="cv-download" data-cv-download download={filename}>{copy.download}</a>
+      <button type="button" data-cv-lock>{copy.lock}</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { accessParameters, fromBase64Url, importAccessKey } from '../lib/cv-crypto.mjs';
+
+  const panel = document.querySelector<HTMLDivElement>('[data-cv-access]');
+  if (panel) {
+    const controls = panel.querySelector<HTMLDivElement>('[data-cv-controls]')!;
+    const form = panel.querySelector<HTMLFormElement>('[data-cv-form]')!;
+    const input = panel.querySelector<HTMLInputElement>('input')!;
+    const submit = form.querySelector<HTMLButtonElement>('button')!;
+    const status = panel.querySelector<HTMLParagraphElement>('[data-cv-status]')!;
+    const details = panel.querySelector<HTMLDivElement>('[data-cv-details]')!;
+    const email = panel.querySelector<HTMLAnchorElement>('[data-cv-email]')!;
+    const whatsapp = panel.querySelector<HTMLAnchorElement>('[data-cv-whatsapp]')!;
+    const download = panel.querySelector<HTMLAnchorElement>('[data-cv-download]')!;
+    const lock = panel.querySelector<HTMLButtonElement>('[data-cv-lock]')!;
+    const { locale, file, invalid, unavailable } = panel.dataset;
+    let pdfUrl: string | undefined;
+
+    function hideDetails() {
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      pdfUrl = undefined;
+      download.removeAttribute('href');
+      for (const link of [email, whatsapp]) {
+        link.removeAttribute('href');
+        link.textContent = '';
+      }
+      details.hidden = true;
+      controls.hidden = false;
+    }
+
+    controls.hidden = false;
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const code = input.value.trim();
+      input.value = '';
+      status.textContent = '';
+      submit.disabled = true;
+      try {
+        let key;
+        try {
+          key = await importAccessKey(code);
+        } catch {
+          status.textContent = invalid ?? '';
+          return;
+        }
+        const result = await fetch(file!, { credentials: 'omit' });
+        if (!result.ok) throw new Error('CV file unavailable.');
+        const envelope = await result.json();
+        let contents;
+        try {
+          contents = await crypto.subtle.decrypt(
+            accessParameters(locale, fromBase64Url(envelope.iv)), key, fromBase64Url(envelope.data),
+          );
+        } catch {
+          status.textContent = invalid ?? '';
+          return;
+        }
+        const contact = JSON.parse(new TextDecoder().decode(contents));
+        if (!/^https:\/\/wa\.me\/\d+$/.test(contact.whatsapp)) throw new Error('Invalid contact link.');
+        pdfUrl = URL.createObjectURL(new Blob([fromBase64Url(contact.pdf)], { type: 'application/pdf' }));
+        download.href = pdfUrl;
+        email.href = 'mailto:' + contact.email;
+        email.textContent = contact.email;
+        whatsapp.href = contact.whatsapp;
+        whatsapp.textContent = 'WhatsApp · ' + contact.phone;
+        controls.hidden = true;
+        details.hidden = false;
+        download.focus();
+      } catch {
+        hideDetails();
+        status.textContent = unavailable ?? '';
+      } finally {
+        submit.disabled = false;
+        if (details.hidden) input.focus();
+      }
+    });
+
+    lock.addEventListener('click', () => {
+      hideDetails();
+      input.focus();
+    });
+    window.addEventListener('pagehide', hideDetails);
+  }
+</script>
+
+<style>
+  .cv-access { margin-top: 0.9rem; }
+  label { display: block; font-weight: 650; margin-block: 0.65rem 0.25rem; }
+  .cv-key-row, address { display: flex; flex-wrap: wrap; gap: 0.5rem 0.8rem; }
+  input, button, .cv-download { padding: 0.55rem 0.7rem; border: 1px solid #56728a; border-radius: 0.35rem; font: inherit; }
+  input { width: min(100%, 16rem); color: #152b41; }
+  button, .cv-download { background: #9ce0d6; color: #122c3d; font-weight: 650; cursor: pointer; text-decoration: none; }
+  button:disabled { opacity: 0.7; cursor: wait; }
+  address { margin-bottom: 0.75rem; font-style: normal; overflow-wrap: anywhere; }
+  address a { color: #9ce0d6; }
+  [role="status"]:not(:empty) { margin-top: 0.45rem; }
+</style>

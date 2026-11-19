@@ -1,0 +1,130 @@
+---
+import { certifications, educationInstitution, learningTechnologies, name, resume, type Locale } from '../data/resume';
+import CvAccess from './CvAccess.astro';
+import '../styles/resume.css';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const copy = resume[locale];
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const languageLinks = [
+  { code: 'es', label: 'Español', href: `${base}/` },
+  { code: 'en', label: 'English', href: `${base}/en/` },
+];
+const sections = [
+  { id: 'experience', label: copy.experience },
+  { id: 'stack', label: copy.stack },
+  { id: 'education', label: copy.education },
+];
+const accessHref = `${base}/access/cv-${locale}.json`;
+---
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={copy.description} />
+    <meta name="theme-color" content="#14283d" />
+    <link rel="icon" href={`${base}/favicon.png`} />
+    <title>{name} | {copy.title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">{copy.skip}</a>
+    <header class="site-header">
+      <div class="frame header-inner">
+        <a class="identity" href={`${base}${locale === 'en' ? '/en/' : '/'}`} aria-label={name}>
+          <span class="monogram" aria-hidden="true">JS</span>
+          <span>{name}</span>
+        </a>
+        <nav class="languages" aria-label={copy.languages}>
+          {languageLinks.map(({ code, label, href }) => (
+            <a href={href} lang={code} hreflang={code} aria-current={locale === code ? 'page' : undefined}>{label}</a>
+          ))}
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" aria-labelledby="name">
+        <div class="frame hero-inner">
+          <div class="hero-heading">
+            <p class="location">{copy.location}</p>
+            <h1 id="name">{name}</h1>
+            <p class="role">{copy.title}</p>
+            <p class="subtitle">{copy.subtitle}</p>
+            <a class="download" href="#cv-access">{copy.privateAccess}</a>
+          </div>
+          <div class="profile">
+            <h2>{copy.profile}</h2>
+            <p>{copy.summary}</p>
+            <div id="cv-access">
+              <CvAccess locale={locale} href={accessHref} filename={`${copy.document}.pdf`} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="section-bar">
+        <nav class="frame section-links" aria-label={copy.navigation}>
+          {sections.map(({ id, label }) => <a href={`#${id}`}>{label}</a>)}
+        </nav>
+      </div>
+
+      <div class="frame content">
+        <section id="experience" class="section experience" aria-labelledby="experience-title">
+          <h2 id="experience-title">{copy.experience}</h2>
+          <ol class="timeline" role="list">
+            {copy.jobs.map((job) => (
+              <li class="job">
+                <div class="job-meta">
+                  <p class="company">{job.company}</p>
+                  <p class="period">{job.period}</p>
+                </div>
+                <h3>{job.role}</h3>
+                <ul class="highlights">{job.highlights.map((item) => <li>{item}</li>)}</ul>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="stack" class="section stack" aria-labelledby="stack-title">
+          <h2 id="stack-title">{copy.stack}</h2>
+          <dl class="stack-groups">
+            {copy.groups.map(([label, technologies]) => (
+              <div><dt>{label}</dt><dd>{technologies}</dd></div>
+            ))}
+          </dl>
+          <div class="learning">
+            <h3>{copy.learning}</h3>
+            <ul class="tags" role="list">{learningTechnologies.map((technology) => <li>{technology}</li>)}</ul>
+          </div>
+        </section>
+
+        <div id="education" class="credentials">
+          <section class="section education" aria-labelledby="education-title">
+            <h2 id="education-title">{copy.education}</h2>
+            <h3>{copy.degree}</h3>
+            <p>{educationInstitution}</p>
+            <p class="period">{copy.graduation}</p>
+          </section>
+          <section class="section" aria-labelledby="certification-title">
+            <h2 id="certification-title">{copy.certifications}</h2>
+            <ul class="certifications" role="list">
+              {certifications.map((cert) => <li><span>{cert.name}</span><span class="period">{cert.year}</span></li>)}
+            </ul>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <div class="frame footer-inner">
+        <span>{name}</span>
+        <a href="#cv-access">{copy.privateAccess}</a>
+      </div>
+    </footer>
+  </body>
+</html>
