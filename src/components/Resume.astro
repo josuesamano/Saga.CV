@@ -55,14 +55,11 @@ const accessHref = `${base}/access/cv-${locale}.json`;
             <h1 id="name">{name}</h1>
             <p class="role">{copy.title}</p>
             <p class="subtitle">{copy.subtitle}</p>
-            <a class="download" href="#cv-access">{copy.privateAccess}</a>
           </div>
           <div class="profile">
             <h2>{copy.profile}</h2>
             <p>{copy.summary}</p>
-            <div id="cv-access">
-              <CvAccess locale={locale} href={accessHref} filename={`${copy.document}.pdf`} />
-            </div>
+            <CvAccess locale={locale} href={accessHref} filename={`${copy.document}.pdf`} />
           </div>
         </div>
       </section>
@@ -123,7 +120,6 @@ const accessHref = `${base}/access/cv-${locale}.json`;
     <footer>
       <div class="frame footer-inner">
         <span>{name}</span>
-        <a href="#cv-access">{copy.privateAccess}</a>
       </div>
     </footer>
   </body>

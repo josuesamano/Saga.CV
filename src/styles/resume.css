@@ -36,9 +36,6 @@ a:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
 h1 { max-width: 16ch; margin-block: 0.5rem 0.8rem; color: white; font-size: clamp(2.55rem, 5.2vw, 4.75rem); line-height: 1.01; letter-spacing: -0.055em; text-wrap: balance; }
 .role { color: white; font-size: clamp(1.1rem, 2.5vw, 1.5rem); font-weight: 650; line-height: 1.25; }
 .subtitle { margin-top: 0.35rem; color: #d5e3ee; }
-.download { display: inline-flex; align-items: center; gap: 0.7rem; margin-top: 1.45rem; padding: 0.65rem 0.9rem; border-radius: 0.43rem; background: var(--light-teal); color: #122c3d; font-weight: 700; text-decoration: none; }
-.download:hover { background: #c0f0ea; }
-.download:focus-visible { outline-color: white; }
 .profile { padding: clamp(1rem, 3vw, 1.6rem); border: 1px solid #56728a; border-radius: 0.6rem; background: #112a3e; }
 .profile h2 { margin-bottom: 0.55rem; color: var(--light-teal); font-size: 1rem; }
 .profile p { color: #ecf3f8; }
